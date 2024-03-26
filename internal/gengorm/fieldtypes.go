@@ -132,12 +132,12 @@ func (t *FieldType) init() error {
 
 	switch {
 	case t.Custom && t.External:
-		panic(fmt.Sprintf("TODO: External custom types: %+v", t.Go))
-		// t.Gorm.GoName = t.alias()
+		//panic(fmt.Sprintf("TODO: External custom types: %+v", t.Go))
+		t.Gorm.GoName = fmt.Sprintf("[]*%s", t.Go.GoName)
 
 	case t.Custom && !t.External:
-		panic(fmt.Sprintf("TODO: Internal custom types: %+v", t.Go))
-		// t.Gorm.GoName = t.Go.GoName
+		//panic(fmt.Sprintf("TODO: Internal custom types: %+v", t.Go))
+		t.Gorm.GoName = fmt.Sprintf("[]*%s", t.Go.GoName)
 	}
 	return nil
 }

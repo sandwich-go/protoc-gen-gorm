@@ -167,6 +167,7 @@ message FieldOptions {
 
   // Custom types: Inline as JSON.
   bool json = 25;
+  bool view_hide = 26;
 }
 
 /*

@@ -10,10 +10,12 @@ func (m *Message) genCRUD() {
 	if !m.opts.Crud {
 		return
 	}
+	m.genDefaultDB()
 	m.genOptionTypes()
 	m.genWithDBType()
 	m.genCreate()
 	m.genGet()
+	m.genCount()
 	m.genList()
 	m.genUpdate()
 	m.genPatch()
@@ -22,6 +24,28 @@ func (m *Message) genCRUD() {
 	m.genListOptions()
 	m.genColForPath()
 	m.genColsForPaths()
+}
+func (m *Message) genDefaultDB() {
+	m.P(fmt.Sprintf("var _defaultDBFor%s *gorm.DB", m.ProtoName()))
+	m.P(fmt.Sprintf("func SetDefaultDBFor%s(db *gorm.DB) { ", m.ProtoName()))
+	m.P(fmt.Sprintf("_defaultDBFor%s = db", m.ProtoName()))
+	m.P("}")
+}
+
+func (m *Message) genCount() {
+	m.P("func (c ", m.typeNameWithDB(), ") Count(ctx ", m.identCtx(), ") (int32, error) {")
+	m.P("if c.p == nil {")
+	m.P("return 0, nil")
+	m.P("}")
+	m.P("db := c.db.WithContext(ctx)")
+
+	m.P("m, err := c.p.ToModel()")
+	m.P("if err != nil {")
+	m.P("	return 0, err")
+	m.P("}")
+	m.P("count := int64(0)")
+	m.P("return int32(count), db.Model(m).Where(m).Count(&count).Error")
+	m.P("}")
 }
 
 func (m *Message) genWithDBType() {
@@ -34,6 +58,12 @@ func (m *Message) genWithDBType() {
 	m.P("return ", m.typeNameWithDB(), "{p: p, db: db}")
 	m.P("}") // func
 	m.P()
+
+	m.P("func (p *", m.ProtoName(), ") WithDefaultDB() ", m.typeNameWithDB(), " {")
+	m.P("return ", m.typeNameWithDB(), fmt.Sprintf("{p: p, db: _defaultDBFor%s}", m.ProtoName()))
+	m.P("}") // func
+	m.P()
+
 }
 
 func (m *Message) genOptionTypes() {
@@ -357,6 +387,9 @@ func (m *Message) genWithLimit() {
 func (m *Message) genColForPath() {
 	m.P("var fieldColumns", m.ModelName(), " = map[string]string{")
 	for _, field := range m.fields {
+		if field.opts.GetIgnore() {
+			continue
+		}
 		name := field.Name()
 		if col := field.opts.Column; col != "" {
 			name = col
